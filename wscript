@@ -722,6 +722,14 @@ video_output_features = [
         'name': '--rpi',
         'desc': 'Raspberry Pi support',
         'func': check_rpi,
+    }, {
+        'name': '--rkmpp',
+        'desc': 'RockChip MPP  support',
+        'func': compose_checks(
+                check_cc(header_name=['rockchip/rk_mpi.h'],
+                         lib='rockchip_mpp'),
+                check_cc(lib="GLESv2")
+                ),
     } , {
         'name': '--ios-gl',
         'desc': 'iOS OpenGL ES hardware decoding interop support',

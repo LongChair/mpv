@@ -156,6 +156,14 @@ static const struct vd_lavc_hwdec mp_vd_lavc_rpi_copy = {
 };
 #endif
 
+#if HAVE_RKMPP
+static const struct vd_lavc_hwdec mp_vd_lavc_rkmpp = {
+    .type = HWDEC_RKMPP,
+    .lavc_suffix = "_rkmpp",
+    .image_format = IMGFMT_DRMPRIME,
+};
+#endif
+
 #if HAVE_ANDROID
 static const struct vd_lavc_hwdec mp_vd_lavc_mediacodec = {
     .type = HWDEC_MEDIACODEC,
@@ -281,6 +289,9 @@ static const struct vd_lavc_hwdec *const hwdec_list[] = {
     &mp_vd_lavc_cuda_copy,
 #endif
     &mp_vd_lavc_crystalhd,
+#if HAVE_RKMPP
+    &mp_vd_lavc_rkmpp,
+#endif
     NULL
 };
 
