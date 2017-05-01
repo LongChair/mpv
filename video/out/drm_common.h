@@ -30,6 +30,7 @@ struct kms {
     drmModeEncoder *encoder;
     drmModeModeInfo mode;
     uint32_t crtc_id;
+    uint32_t plane_id;
     int card_no;
 };
 
@@ -51,7 +52,7 @@ void vt_switcher_release(struct vt_switcher *s, void (*handler)(void*),
                          void *user_data);
 
 struct kms *kms_create(struct mp_log *log, const char *connector_spec,
-                       int mode_id);
+                       int mode_id, int layer_id);
 void kms_destroy(struct kms *kms);
 double kms_get_display_fps(const struct kms *kms);
 

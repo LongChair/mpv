@@ -515,3 +515,8 @@ Available video output drivers are:
         Mode ID to use (resolution, bit depth and frame rate).
         (default: 0)
 
+    ``--drm-layer=<number>``
+        Select the DRM layer index to use.
+        Layer index is zero based, and related to crtc.
+        (default: 0)
+

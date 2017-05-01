@@ -284,7 +284,7 @@ static int drm_egl_init(struct MPGLContext *ctx, int flags)
 
     MP_VERBOSE(ctx->vo, "Initializing KMS\n");
     p->kms = kms_create(ctx->vo->log, ctx->vo->opts->drm_connector_spec,
-                        ctx->vo->opts->drm_mode_id);
+                        ctx->vo->opts->drm_mode_id, ctx->vo->opts->drm_layer_id);
     if (!p->kms) {
         MP_ERR(ctx->vo, "Failed to create KMS.\n");
         return -1;
