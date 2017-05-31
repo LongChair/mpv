@@ -175,8 +175,8 @@ static void overlay_adjust(struct gl_hwdec *hw, int w, int h,
     hratio = vratio = 1.0;
     crtc = drmModeGetCrtc(p->kms->fd, p->kms->crtc_id);
     if (crtc) {
-        hratio = (crtc->mode.hdisplay / (p->dst.x1 - p->dst.x0));
-        vratio = (crtc->mode.vdisplay / (p->dst.y1 - p->dst.y0));
+        hratio = ((double)crtc->mode.hdisplay / (double)(p->dst.x1 - p->dst.x0));
+        vratio = ((double)crtc->mode.vdisplay / (double)(p->dst.y1 - p->dst.y0));
         drmModeFreeCrtc(crtc);
     }
 
