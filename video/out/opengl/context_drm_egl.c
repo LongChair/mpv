@@ -118,7 +118,7 @@ static bool init_gbm(struct MPGLContext *ctx)
         p->gbm.device,
         p->kms->mode.hdisplay,
         p->kms->mode.vdisplay,
-        GBM_BO_FORMAT_XRGB8888,
+        GBM_FORMAT_XRGB8888,
         GBM_BO_USE_SCANOUT | GBM_BO_USE_RENDERING);
     if (!p->gbm.surface) {
         MP_ERR(ctx->vo, "Failed to create GBM surface.\n");

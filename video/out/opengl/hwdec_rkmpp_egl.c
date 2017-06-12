@@ -30,6 +30,27 @@
 typedef void* GLeglImageOES;
 #endif
 
+#define MAX_NUM_PLANES  4
+
+static const EGLint egl_dmabuf_plane_fd_attr[MAX_NUM_PLANES] = {
+        EGL_DMA_BUF_PLANE0_FD_EXT,
+        EGL_DMA_BUF_PLANE1_FD_EXT,
+        EGL_DMA_BUF_PLANE2_FD_EXT,
+        EGL_DMA_BUF_PLANE3_FD_EXT,
+};
+static const EGLint egl_dmabuf_plane_offset_attr[MAX_NUM_PLANES] = {
+        EGL_DMA_BUF_PLANE0_OFFSET_EXT,
+        EGL_DMA_BUF_PLANE1_OFFSET_EXT,
+        EGL_DMA_BUF_PLANE2_OFFSET_EXT,
+        EGL_DMA_BUF_PLANE3_OFFSET_EXT,
+};
+static const EGLint egl_dmabuf_plane_pitch_attr[MAX_NUM_PLANES] = {
+        EGL_DMA_BUF_PLANE0_PITCH_EXT,
+        EGL_DMA_BUF_PLANE1_PITCH_EXT,
+        EGL_DMA_BUF_PLANE2_PITCH_EXT,
+        EGL_DMA_BUF_PLANE3_PITCH_EXT,
+};
+
 struct priv {
     struct mp_log *log;
 
@@ -152,15 +173,18 @@ static int map_frame(struct gl_hwdec *hw, struct mp_image *hw_image,
     int attribs[26] = {EGL_NONE};
     int num_attribs = 0;
 
-    ADD_ATTRIB(EGL_LINUX_DRM_FOURCC_EXT, DRM_FORMAT_NV12);
+    ADD_ATTRIB(EGL_LINUX_DRM_FOURCC_EXT, primedata->format);
     ADD_ATTRIB(EGL_WIDTH, hw_image->w);
     ADD_ATTRIB(EGL_HEIGHT, hw_image->h);
-    ADD_ATTRIB(EGL_DMA_BUF_PLANE0_FD_EXT, primedata->fds[0]);
-    ADD_ATTRIB(EGL_DMA_BUF_PLANE0_OFFSET_EXT, primedata->offsets[0]);
-    ADD_ATTRIB(EGL_DMA_BUF_PLANE0_PITCH_EXT, primedata->strides[0]);
-    ADD_ATTRIB(EGL_DMA_BUF_PLANE1_FD_EXT, primedata->fds[0]);
-    ADD_ATTRIB(EGL_DMA_BUF_PLANE1_OFFSET_EXT, primedata->offsets[1]);
-    ADD_ATTRIB(EGL_DMA_BUF_PLANE1_PITCH_EXT, primedata->strides[1]);
+    for (int i=0; i < AV_DRMPRIME_NUM_PLANES; i++) {
+        if (primedata->fds[0]) {
+            ADD_ATTRIB(egl_dmabuf_plane_fd_attr[i], primedata->fds[i]);
+            ADD_ATTRIB(egl_dmabuf_plane_offset_attr[i], primedata->offsets[i]);
+            ADD_ATTRIB(egl_dmabuf_plane_pitch_attr[i], primedata->strides[i]);
+        }
+
+    }
+
     ADD_ATTRIB(EGL_YUV_COLOR_SPACE_HINT_EXT, EGL_ITU_REC601_EXT);
     ADD_ATTRIB(EGL_SAMPLE_RANGE_HINT_EXT, EGL_YUV_NARROW_RANGE_EXT);
 

@@ -70,8 +70,7 @@ static void set_current_frame(struct gl_hwdec *hw, drm_frame *frame)
         p->current_frame.fb_id = frame->fb_id;
         p->current_frame.gem_handle = frame->gem_handle;
         mp_image_setrefp(&p->current_frame.image, frame->image);
-    }
-    else {
+    } else {
         p->current_frame.fb_id = 0;
         p->current_frame.gem_handle = 0;
         mp_image_setrefp(&p->current_frame.image, NULL);
@@ -95,9 +94,6 @@ static int overlay_frame(struct gl_hwdec *hw, struct mp_image *hw_image)
     struct priv *p = hw->priv;
     av_drmprime *primedata = NULL;
     int ret;
-    uint32_t pitches[4] = { 0, 0, 0, 0};
-    uint32_t offsets[4] = { 0, 0, 0, 0};
-    uint32_t handles[4] = { 0, 0, 0, 0};
     struct drm_frame next_frame = { 0, 0, NULL };
 
     if (hw_image) {
@@ -110,12 +106,17 @@ static int overlay_frame(struct gl_hwdec *hw, struct mp_image *hw_image)
                 goto err;
             }
 
-            pitches[0] = primedata->strides[0];
-            offsets[0] = primedata->offsets[0];
-            handles[0] = next_frame.gem_handle;
-            pitches[1] = primedata->strides[1];
-            offsets[1] = primedata->offsets[1];
-            handles[1] = next_frame.gem_handle;
+            uint32_t pitches[4] = { primedata->strides[0],
+                                    primedata->strides[1],
+                                    0, 0};
+
+            uint32_t offsets[4] = { primedata->offsets[0],
+                                    primedata->offsets[1],
+                                    0, 0};
+
+            uint32_t handles[4] = { next_frame.gem_handle,
+                                    next_frame.gem_handle,
+                                    0, 0};
 
             int srcw = p->src.x1 - p->src.x0;
             int srch = p->src.y1 - p->src.y0;
