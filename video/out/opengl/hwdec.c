@@ -36,8 +36,8 @@ extern const struct gl_hwdec_driver gl_hwdec_dxva2gldx;
 extern const struct gl_hwdec_driver gl_hwdec_dxva2;
 extern const struct gl_hwdec_driver gl_hwdec_cuda;
 extern const struct gl_hwdec_driver gl_hwdec_rpi_overlay;
-extern const struct gl_hwdec_driver gl_hwdec_rkmpp_egl;
-extern const struct gl_hwdec_driver gl_hwdec_rkmpp_drm;
+extern const struct gl_hwdec_driver gl_hwdec_drmprime_egl;
+extern const struct gl_hwdec_driver gl_hwdec_drmprime_drm;
 
 static const struct gl_hwdec_driver *const mpgl_hwdec_drivers[] = {
 #if HAVE_VAAPI_EGL
@@ -68,9 +68,9 @@ static const struct gl_hwdec_driver *const mpgl_hwdec_drivers[] = {
 #if HAVE_RPI
     &gl_hwdec_rpi_overlay,
 #endif
-#if HAVE_RKMPP
-    &gl_hwdec_rkmpp_egl,
-    &gl_hwdec_rkmpp_drm,
+#if HAVE_DRM
+    &gl_hwdec_drmprime_egl,
+    &gl_hwdec_drmprime_drm,
 #endif
     NULL
 };

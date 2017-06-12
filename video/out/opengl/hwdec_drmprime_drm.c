@@ -238,11 +238,11 @@ err:
 
 static bool test_format(struct gl_hwdec *hw, int imgfmt)
 {
-    return imgfmt == IMGFMT_RKMPP;
+    return imgfmt == IMGFMT_DRMPRIME;
 }
 
-const struct gl_hwdec_driver gl_hwdec_rkmpp_drm = {
-    .name = "rkmpp-drm",
+const struct gl_hwdec_driver gl_hwdec_drmprime_drm = {
+    .name = "drmprime-drm",
     .api = HWDEC_RKMPP,
     .test_format = test_format,
     .create = create,

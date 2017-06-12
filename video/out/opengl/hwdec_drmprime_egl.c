@@ -214,10 +214,10 @@ err:
     return -1;
 }
 
-const struct gl_hwdec_driver gl_hwdec_rkmpp_egl = {
-    .name = "rkmpp-egl",
+const struct gl_hwdec_driver gl_hwdec_drmprime_egl = {
+    .name = "drmprime-egl",
     .api = HWDEC_RKMPP,
-    .imgfmt = IMGFMT_RKMPP,
+    .imgfmt = IMGFMT_DRMPRIME,
     .create = create,
     .reinit = reinit,
     .map_frame = map_frame,
