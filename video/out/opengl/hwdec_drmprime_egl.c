@@ -24,7 +24,7 @@
 #include <EGL/eglext.h>
 
 #include "hwdec.h"
-#include "libavcodec/drmprime.h"
+#include "libavutil/hwcontext_drm.h"
 
 #ifndef GL_OES_EGL_image
 typedef void* GLeglImageOES;
@@ -164,9 +164,9 @@ static int map_frame(struct gl_hwdec *hw, struct mp_image *hw_image,
 {
     struct priv *p = hw->priv;
     GL *gl = hw->gl;
-    av_drmprime *primedata = (av_drmprime *)hw_image->planes[3];
+    AVDRMFrameDescriptor *desc = (AVDRMFrameDescriptor *)hw_image->planes[3];
 
-    if (!primedata)
+    if (!desc)
         goto err;
 
     unmap_frame(hw);
@@ -174,14 +174,14 @@ static int map_frame(struct gl_hwdec *hw, struct mp_image *hw_image,
     int attribs[40] = {EGL_NONE};
     int num_attribs = 0;
 
-    ADD_ATTRIB(EGL_LINUX_DRM_FOURCC_EXT, primedata->format);
+    ADD_ATTRIB(EGL_LINUX_DRM_FOURCC_EXT, desc->format);
     ADD_ATTRIB(EGL_WIDTH, hw_image->w);
     ADD_ATTRIB(EGL_HEIGHT, hw_image->h);
-    for (int i=0; i < AV_DRMPRIME_NUM_PLANES; i++) {
-        if (primedata->fds[i]) {
-            ADD_ATTRIB(egl_dmabuf_plane_fd_attr[i], primedata->fds[i]);
-            ADD_ATTRIB(egl_dmabuf_plane_offset_attr[i], primedata->offsets[i]);
-            ADD_ATTRIB(egl_dmabuf_plane_pitch_attr[i], primedata->strides[i]);
+    for (int i=0; i < AV_NUM_DATA_POINTERS; i++) {
+        if (desc->fd[i]) {
+            ADD_ATTRIB(egl_dmabuf_plane_fd_attr[i], desc->fd[i]);
+            ADD_ATTRIB(egl_dmabuf_plane_offset_attr[i], desc->offset[i]);
+            ADD_ATTRIB(egl_dmabuf_plane_pitch_attr[i], desc->pitch[i]);
         }
     }
 
@@ -201,7 +201,7 @@ static int map_frame(struct gl_hwdec *hw, struct mp_image *hw_image,
     out_frame->planes[0] = (struct gl_hwdec_plane){
             .gl_texture = p->gl_texture,
             .gl_target = GL_TEXTURE_EXTERNAL_OES,
-            .tex_w =  primedata->strides[0],
+            .tex_w =  desc->pitch[0],
             .tex_h =  hw_image->h,
         };
 
@@ -216,11 +216,11 @@ err:
 
 static bool test_format(struct gl_hwdec *hw, int imgfmt)
 {
-    return imgfmt == IMGFMT_DRMPRIME;
+    return imgfmt == IMGFMT_DRM;
 }
 
 const struct gl_hwdec_driver gl_hwdec_drmprime_egl = {
-    .name = "drmprime-egl",
+    .name = "drm-egl",
     .api = HWDEC_RKMPP,
     .test_format = test_format,
     .create = create,

@@ -16,7 +16,7 @@
  */
 
 #include <assert.h>
-#include <libavcodec/drmprime.h>
+#include <libavutil/hwcontext_drm.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -92,26 +92,26 @@ static int reinit(struct gl_hwdec *hw, struct mp_image_params *params)
 static int overlay_frame(struct gl_hwdec *hw, struct mp_image *hw_image)
 {
     struct priv *p = hw->priv;
-    av_drmprime *primedata = NULL;
+    AVDRMFrameDescriptor *desc = NULL;
     int ret;
     struct drm_frame next_frame = { 0, 0, NULL };
 
     if (hw_image) {
-        primedata = (av_drmprime *)hw_image->planes[3];
+        desc = (AVDRMFrameDescriptor *)hw_image->planes[3];
 
-        if (primedata) {
-            ret = drmPrimeFDToHandle(p->kms->fd, primedata->fds[0], &next_frame.gem_handle);
+        if (desc) {
+            ret = drmPrimeFDToHandle(p->kms->fd, desc->fd[0], &next_frame.gem_handle);
             if (ret < 0) {
                 MP_ERR(p, "Failed to retrieve the Prime Handle.\n");
                 goto err;
             }
 
-            uint32_t pitches[4] = { primedata->strides[0],
-                                    primedata->strides[1],
+            uint32_t pitches[4] = { desc->pitch[0],
+                                    desc->pitch[1],
                                     0, 0};
 
-            uint32_t offsets[4] = { primedata->offsets[0],
-                                    primedata->offsets[1],
+            uint32_t offsets[4] = { desc->offset[0],
+                                    desc->offset[1],
                                     0, 0};
 
             uint32_t handles[4] = { next_frame.gem_handle,
@@ -124,7 +124,7 @@ static int overlay_frame(struct gl_hwdec *hw, struct mp_image *hw_image)
             int dsth = MP_ALIGN_UP(p->dst.y1 - p->dst.y0, 16);
 
 
-            ret = drmModeAddFB2(p->kms->fd, hw_image->w, hw_image->h, primedata->format,
+            ret = drmModeAddFB2(p->kms->fd, hw_image->w, hw_image->h, desc->format,
                                 handles, pitches, offsets, &next_frame.fb_id, 0);
 
             if (ret < 0) {
@@ -238,11 +238,11 @@ err:
 
 static bool test_format(struct gl_hwdec *hw, int imgfmt)
 {
-    return imgfmt == IMGFMT_DRMPRIME;
+    return imgfmt == IMGFMT_DRM;
 }
 
 const struct gl_hwdec_driver gl_hwdec_drmprime_drm = {
-    .name = "drmprime-drm",
+    .name = "drm-drm",
     .api = HWDEC_RKMPP,
     .test_format = test_format,
     .create = create,

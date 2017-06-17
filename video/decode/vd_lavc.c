@@ -160,7 +160,7 @@ static const struct vd_lavc_hwdec mp_vd_lavc_rpi_copy = {
 static const struct vd_lavc_hwdec mp_vd_lavc_rkmpp = {
     .type = HWDEC_RKMPP,
     .lavc_suffix = "_rkmpp",
-    .image_format = IMGFMT_DRMPRIME,
+    .image_format = IMGFMT_DRM,
 };
 #endif
 
