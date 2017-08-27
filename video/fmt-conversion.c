@@ -112,6 +112,7 @@ static const struct {
 #ifdef AV_PIX_FMT_P016
     {IMGFMT_P016, AV_PIX_FMT_P016},
 #endif
+    {IMGFMT_DRMPRIME, AV_PIX_FMT_DRM_PRIME},
 
     {0, AV_PIX_FMT_NONE}
 };
