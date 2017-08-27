@@ -120,9 +120,8 @@ static int overlay_frame(struct gl_hwdec *hw, struct mp_image *hw_image)
 
             int srcw = p->src.x1 - p->src.x0;
             int srch = p->src.y1 - p->src.y0;
-            int dstw = MP_ALIGN_UP(p->dst.x1 - p->dst.x0, 16);
-            int dsth = MP_ALIGN_UP(p->dst.y1 - p->dst.y0, 16);
-
+            int dstw = MP_ALIGN_UP(p->dst.x1 - p->dst.x0, 2);
+            int dsth = MP_ALIGN_UP(p->dst.y1 - p->dst.y0, 2);
 
             ret = drmModeAddFB2(p->kms->fd, hw_image->w, hw_image->h, desc->format,
                                 handles, pitches, offsets, &next_frame.fb_id, 0);
@@ -133,7 +132,7 @@ static int overlay_frame(struct gl_hwdec *hw, struct mp_image *hw_image)
             }
 
             ret = drmModeSetPlane(p->kms->fd, p->kms->plane_id, p->kms->crtc_id, next_frame.fb_id, 0,
-                                  MP_ALIGN_UP(p->dst.x0, 2), MP_ALIGN_UP(p->dst.y0, 2), dstw, dsth,
+                                  MP_ALIGN_DOWN(p->dst.x0, 2), MP_ALIGN_DOWN(p->dst.y0, 2), dstw, dsth,
                                   p->src.x0 << 16, p->src.y0 << 16 , srcw << 16, srch << 16);
             if (ret < 0) {
                 MP_ERR(p, "Failed to set the plane %d (buffer %d).\n", p->kms->plane_id,
