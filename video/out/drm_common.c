@@ -291,6 +291,14 @@ struct kms *kms_create(struct mp_log *log, const char *connector_spec,
         goto err;
     }
 
+    if (drmSetClientCap(kms->fd, DRM_CLIENT_CAP_ATOMIC, 1)) {
+        mp_info(log, "No DRM atomic support found\n");
+    }
+    else {
+        mp_info(log, "DRM atomic support found\n");
+        kms->hasAtomic = 1;
+    }
+
     if (!setup_connector(kms, res, connector_name))
         goto err;
     if (!setup_crtc(kms, res, plane_res, layer_id))
@@ -410,7 +418,34 @@ int drm_validate_connector_opt(struct mp_log *log, const struct m_option *opt,
     return 1;
 }
 
+int drm_add_plane_property(const struct kms *kms, drmModeAtomicReq *req, uint32_t plane_id,
+                                const char *name, uint64_t value)
+{
+    drmModeObjectPropertiesPtr props;
+    drmModePropertyPtr prop_info;
+    int ret;
 
+    props = drmModeObjectGetProperties(kms->fd, plane_id, DRM_MODE_OBJECT_PLANE);
+    if (props) {
+        for (int i = 0; i < props->count_props; i++) {
+            prop_info = drmModeGetProperty(kms->fd, props->props[i]);
+            if (prop_info) {
+                if (strcmp(prop_info->name, name) == 0) {
+                    ret = drmModeAtomicAddProperty(req, plane_id, prop_info->prop_id, value);
+                    drmModeFreeProperty(prop_info);
+                    drmModeFreeObjectProperties(props);
+                    return ret;
+                }
+                drmModeFreeProperty(prop_info);
+            }
+        }
+        drmModeFreeObjectProperties(props);
+    }
+    else
+        MP_ERR(kms,"Failed to get object properties for plane %d\n", plane_id);
+
+    return -1;
+}
 
 // VT switcher ----------------------------------------------------------------
 

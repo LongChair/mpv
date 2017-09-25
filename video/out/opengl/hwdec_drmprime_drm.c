@@ -184,13 +184,37 @@ static int overlay_frame(struct ra_hwdec *hw, struct mp_image *hw_image,
                     goto err;
                 }
 
-                ret = drmModeSetPlane(p->kms->fd, p->kms->plane_id, p->kms->crtc_id, next_frame.fb_id, 0,
-                                      MP_ALIGN_DOWN(p->dst.x0, 2), MP_ALIGN_DOWN(p->dst.y0, 2), dstw, dsth,
-                                      p->src.x0 << 16, p->src.y0 << 16 , srcw << 16, srch << 16);
-                if (ret < 0) {
-                    MP_ERR(hw, "Failed to set the plane %d (buffer %d).\n", p->kms->plane_id,
-                                next_frame.fb_id);
-                    goto err;
+                if (p->kms->hasAtomic) {
+                    drmModeAtomicReq *req = drmModeAtomicAlloc();
+
+                    if (req) {
+                        drm_add_plane_property(p->kms, req, p->kms->plane_id, "FB_ID",   next_frame.fb_id);
+                        drm_add_plane_property(p->kms, req, p->kms->plane_id, "CRTC_ID", p->kms->crtc_id);
+                        drm_add_plane_property(p->kms, req, p->kms->plane_id, "SRC_X",   p->src.x0 << 16);
+                        drm_add_plane_property(p->kms, req, p->kms->plane_id, "SRC_Y",   p->src.y0 << 16);
+                        drm_add_plane_property(p->kms, req, p->kms->plane_id, "SRC_W",   srcw << 16);
+                        drm_add_plane_property(p->kms, req, p->kms->plane_id, "SRC_H",   srch << 16);
+                        drm_add_plane_property(p->kms, req, p->kms->plane_id, "CRTC_X",  MP_ALIGN_DOWN(p->dst.x0, 2));
+                        drm_add_plane_property(p->kms, req, p->kms->plane_id, "CRTC_Y",  MP_ALIGN_DOWN(p->dst.y0, 2));
+                        drm_add_plane_property(p->kms, req, p->kms->plane_id, "CRTC_W",  dstw);
+                        drm_add_plane_property(p->kms, req, p->kms->plane_id, "CRTC_H",  dsth);
+                        drm_add_plane_property(p->kms, req, p->kms->plane_id, "ZPOS",    0);
+
+                        ret = drmModeAtomicCommit(p->kms->fd, req, DRM_MODE_ATOMIC_NONBLOCK, NULL);
+                        if (ret)
+                            MP_ERR(hw, "Atomic commit failed with error code %d.\n", ret);
+                    } else
+                        MP_ERR(hw, "Failed to create Atomic request\n");
+
+                } else {
+                    ret = drmModeSetPlane(p->kms->fd, p->kms->plane_id, p->kms->crtc_id, next_frame.fb_id, 0,
+                                          MP_ALIGN_DOWN(p->dst.x0, 2), MP_ALIGN_DOWN(p->dst.y0, 2), dstw, dsth,
+                                          p->src.x0 << 16, p->src.y0 << 16 , srcw << 16, srch << 16);
+                    if (ret < 0) {
+                        MP_ERR(hw, "Failed to set the plane %d (buffer %d).\n", p->kms->plane_id,
+                                    next_frame.fb_id);
+                        goto err;
+                    }
                 }
 
                 next_frame.image = hw_image;

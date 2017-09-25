@@ -32,6 +32,7 @@ struct kms {
     uint32_t crtc_id;
     uint32_t plane_id;
     int card_no;
+    int hasAtomic;
 };
 
 struct vt_switcher {
@@ -63,5 +64,7 @@ void kms_show_available_cards_and_connectors(struct mp_log *log);
 
 int drm_validate_connector_opt(struct mp_log *log, const struct m_option *opt,
                                struct bstr name, struct bstr param);
+int drm_add_plane_property(const struct kms *kms, drmModeAtomicReq *req, uint32_t plane_id,
+                                const char *name, uint64_t value);
 
 #endif
