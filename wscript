@@ -767,6 +767,14 @@ video_output_features = [
             check_cc(lib="EGL"),
             check_cc(lib="GLESv2"),
         ),
+    }, {
+        'name': '--rkmpp',
+        'desc': 'RockChip MPP  support',
+        'func': compose_checks(
+                check_cc(header_name=['rockchip/rk_mpi.h'],
+                         lib='rockchip_mpp'),
+                check_cc(lib="GLESv2")
+                ),
     } , {
         'name': '--ios-gl',
         'desc': 'iOS OpenGL ES hardware decoding interop support',

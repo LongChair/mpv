@@ -120,7 +120,7 @@ static bool init_gbm(struct ra_ctx *ctx)
         p->gbm.device,
         p->kms->mode.hdisplay,
         p->kms->mode.vdisplay,
-        GBM_BO_FORMAT_XRGB8888,
+        GBM_FORMAT_XRGB8888,
         GBM_BO_USE_SCANOUT | GBM_BO_USE_RENDERING);
     if (!p->gbm.surface) {
         MP_ERR(ctx->vo, "Failed to create GBM surface.\n");
@@ -309,9 +309,9 @@ static bool drm_egl_init(struct ra_ctx *ctx)
         MP_WARN(ctx, "Failed to set up VT switcher. Terminal switching will be unavailable.\n");
     }
 
-    MP_VERBOSE(ctx, "Initializing KMS\n");
+    MP_VERBOSE(ctx->vo, "Initializing KMS\n");
     p->kms = kms_create(ctx->log, ctx->vo->opts->drm_connector_spec,
-                        ctx->vo->opts->drm_mode_id);
+                        ctx->vo->opts->drm_mode_id, ctx->vo->opts->drm_layer_id);
     if (!p->kms) {
         MP_ERR(ctx->vo, "Failed to create KMS.\n");
         return false;
