@@ -91,6 +91,9 @@ struct vo_wayland_state {
         struct wl_shm *shm;
 
         struct wl_subcompositor *subcomp;
+
+        int drm_fd;
+        struct zwp_linux_dmabuf_v1 *dmabuf;
     } display;
 
     struct {

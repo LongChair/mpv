@@ -21,6 +21,7 @@
 #include <assert.h>
 
 #include <libavutil/common.h>
+#include <libavutil/hwcontext_drm.h>
 
 #include "config.h"
 
@@ -115,6 +116,11 @@ struct priv {
     // options
     int enable_alpha;
     int use_rgb565;
+};
+
+struct dma_buffer {
+    struct wl_buffer *buffer;
+    uint32_t gem_handles[AV_DRM_MAX_PLANES];
 };
 
 static bool is_alpha_format(const format_t *fmt)
@@ -398,6 +404,127 @@ static void draw_image(struct vo *vo, mp_image_t *mpi)
     buffer_finalise_back(buf);
 
     draw_osd(vo);
+}
+
+static void buffer_release(void *data, struct wl_buffer *buffer)
+{
+    struct buffer *mybuf = data;
+    release_dma_buffer(buffer);
+}
+
+void release_dma_buffer(struct dma_buffer *buffer)
+{
+    for (int i = 0; i < AV_DRM_MAX_PLANES; ++i)
+        if (buffer->gem_handles[i])
+            close(buffer->gem_handles[i]);
+    free(buffer);
+}
+
+static const struct wl_buffer_listener buffer_listener = {
+    buffer_release
+};
+
+
+static const struct zwp_linux_buffer_params_v1_listener params_listener = {
+    param_create_succeeded,
+    param_create_failed
+};
+
+static void param_create_succeeded(void *data, struct zwp_linux_buffer_params_v1 *params, struct wl_buffer *new_buffer)
+{
+    struct dma_buffer *buffer = data;
+
+    buffer->buffer = new_buffer;
+    wl_buffer_add_listener(buffer->buffer, &buffer_listener, buffer);
+
+    zwp_linux_buffer_params_v1_destroy(params);
+
+    release_dma_buffer(buffer);
+}
+
+static void param_create_failed(void *data, struct zwp_linux_buffer_params_v1 *params)
+{
+    struct dma_buffer *buffer = data;
+    buffer->buffer = NULL;
+
+    zwp_linux_buffer_params_v1_destroy(params);
+
+    release_dma_buffer(buffer);
+}
+
+
+static void draw_image_dmabuf(struct vo *vo, mp_image_t *mpi)
+{
+    AVDRMFrameDescriptor *desc = NULL;
+    AVDRMLayerDescriptor *layer = NULL;
+    struct zwp_linux_buffer_params_v1 *params;
+    struct priv *p = vo->priv;
+     struct dma_buffer *buffer = NULL;
+    int ret;
+
+    if (!mpi)
+        return;
+
+    desc = (AVDRMFrameDescriptor *)hw_image->planes[0];
+    params = zwp_linux_dmabuf_v1_create_params(priv->wl->display->dmabuf);
+
+    if ((desc) && (desc->nb_layers)) {
+
+        // grab drm prime handles
+        buffer = malloc(sizeof(dma_buffer));
+        if (!buffer) {
+            MP_ERR(vo, "Out of memory\n");
+            goto fail;
+        }
+
+        for (int object=0; object < desc->nb_objects; object++) {
+            ret = drmPrimeFDToHandle(priv->wl->display->drm_fd, desc->objects[object].fd, &buffer->gem_handles[object]);
+            if (ret < 0) {
+                MP_ERR(hw, "Failed to retrieve the Prime Handle from handle %d (%d).\n", object, desc->objects[object].fd);
+                goto fail;
+            }
+        }
+
+        uint64_t modifier = 0;
+        uint32_t flags = 0;
+
+        for( int l=0; l < desc->nb_layers; l++) {
+            layer = &desc->layers[l];
+
+            params = zwp_linux_dmabuf_v1_create_params(priv->wl->display->dmabuf);
+
+            for (int plane = 0; plane < AV_DRM_MAX_PLANES; plane++) {
+                fd = buffer->gem_handles[layer->planes[plane].object_index];
+                if (fd) {
+
+                    zwp_linux_buffer_params_v1_add(params,
+                                                   buffer->gem_handles[layer->planes[plane].object_index],
+                                                   plane, /* plane_idx */
+                                                   layer->planes[plane].offset, /* offset */
+                                                   layer->planes[plane].pitch,
+                                                   modifier >> 32,
+                                                   modifier & 0xffffffff);
+                }
+            }
+
+            zwp_linux_buffer_params_v1_add_listener(params, &params_listener,
+                                                    buffer);
+
+            zwp_linux_buffer_params_v1_create(params,
+                                              wl->window.width,
+                                              wl->window.height,
+                                              layer->format,
+                                              flags);
+
+        }
+    }
+
+    return;
+
+fail:
+    for (int i = 0; i < AV_DRM_MAX_PLANES; i++)
+        if (buffer && buffer->gem_handles[i])
+            drmIoctl(priv->wl->display->drm_fd, DRM_IOCTL_GEM_CLOSE, buffer->gem_handles[i]);
 }
 
 static void draw_osd_cb(void *ctx, struct sub_bitmaps *imgs)

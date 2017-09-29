@@ -531,6 +531,21 @@ static const struct wl_seat_listener seat_listener = {
     seat_handle_name,
 };
 
+static const struct zwp_linux_dmabuf_v1_listener dmabuf_listener = {
+        dmabuf_format
+};
+
+static void
+dmabuf_format(void *data, struct zwp_linux_dmabuf_v1 *zwp_linux_dmabuf,
+              uint32_t format)
+{
+        struct vo_wayland_state *wl = data;
+
+        MP_VERBOSE(wl, "dmabuf_format callback with format =%x\n", format);
+//	if (format == d->drm_format)
+//		d->requested_format_found = true;
+}
+
 static void registry_handle_global(void *data, struct wl_registry *reg,
                                    uint32_t id, const char *interface,
                                    uint32_t version)
@@ -579,6 +594,12 @@ static void registry_handle_global(void *data, struct wl_registry *reg,
 
         wl->display.subcomp = wl_registry_bind(reg, id,
                                                &wl_subcompositor_interface, 1);
+    }
+
+    else if (strcmp(interface, "zwp_linux_dmabuf_v1") == 0) {
+            wl->display.dmabuf = wl_registry_bind(reg, id,
+                                         &zwp_linux_dmabuf_v1_interface, 1);
+            zwp_linux_dmabuf_v1_add_listener(wl->display.dmabuf, &dmabuf_listener, wl);
     }
 }
 
@@ -765,6 +786,12 @@ static bool create_display(struct vo_wayland_state *wl)
 
     wl->display.display_fd = wl_display_get_fd(wl->display.display);
 
+    wl->display.drm_fd = open("/dev/dri/card0", O_RDWR);
+    if (wl->display.drm_fd < 0) {
+        MP_ERR(wl, "failed to open /dev/dri/card0\n");
+        return false;
+    }
+
     return true;
 }
 
@@ -800,6 +827,9 @@ static void destroy_display(struct vo_wayland_state *wl)
         wl_display_flush(wl->display.display);
         wl_display_disconnect(wl->display.display);
     }
+
+    if (wl->display.drm_fd)
+        close(wl->display.drm_fd);
 }
 
 static bool create_window(struct vo_wayland_state *wl)
