@@ -270,6 +270,9 @@ bool ra_gl_ctx_start_frame(struct ra_swapchain *sw, struct ra_fbo *out_fbo)
     struct priv *p = sw->priv;
     out_fbo->tex = p->wrapped_fb;
     out_fbo->flip = !p->params.flipped; // OpenGL FBs are normally flipped
+
+    if (p->params.start_frame)
+        p->params.start_frame(sw->ctx);
     return true;
 }
 

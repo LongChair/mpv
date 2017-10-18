@@ -151,6 +151,18 @@ extern "C" {
  * up until mpv_opengl_cb_uninit_gl() is called. If the name is not anything
  * you know/expected, return NULL from the function.
  *
+ * * Windowing system scaling
+ * ------------------------------------
+ *
+ * When using GL, sometimes GL rendering window is upscaled to display buffer
+ * Typically with drm where GL framebuffer can be upscaled at later stage
+ * In That case glMPGetNativeDisplay("opengl-cb") should return the GL window
+ * dimensions, that is 4 elements :
+ * 0 : left coordinates of window (usually 0)
+ * 1 : top coordinates of window (usually 0)
+ * 2 : width of GL window
+ * 3 : height of GL window
+ *
  * Windowing system interop on Intel/Linux with VAAPI
  * --------------------------------------------------
  *
@@ -163,9 +175,13 @@ extern "C" {
  *
  * glMPGetNativeDisplay("wl") should return a Wayland "struct wl_display *".
  *
- * glMPGetNativeDisplay("drm") should return a DRM FD casted to intptr_t (note
- * that a 0 FD is not supported - if this can happen in your case, you must
- * dup2() it to a non-0 FD).
+ * glMPGetNativeDisplay("drm") should return an array of void * containing
+ * 3 elements which are
+ * 0 : pointer to the DRM fd (int). Note that a 0 FD is not supported - if this
+ *     can happen in your case, you must dup2() it to a non-0 FD).
+ * 1 : pointer to the crtc_id (int). This is the currently used crtc.
+ * 2 : pointer to the drmAtomicRequest that is being used for the renderloop.
+ *     This atomic request pointer should be usually created at every renderloop.
  *
  * nVidia/Linux via VDPAU requires GLX, which does not have this problem (the
  * GLX API can return the current X11 Display).

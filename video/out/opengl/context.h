@@ -17,6 +17,10 @@ bool ra_gl_ctx_test_version(struct ra_ctx *ctx, int version, bool es);
 // clean them up)
 
 struct ra_gl_ctx_params {
+    // This is called at every frame beginning when defined
+    // it can be optionally implemented.
+    void (*start_frame)(struct ra_ctx *ctx);
+
     // Set to the platform-specific function to swap buffers, like
     // glXSwapBuffers, eglSwapBuffers etc. This will be called by
     // ra_gl_ctx_swap_buffers. Required unless you either never call that
