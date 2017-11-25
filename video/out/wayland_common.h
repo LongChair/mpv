@@ -100,6 +100,9 @@ struct vo_wayland_state {
     struct wl_cursor       *default_cursor;
     struct wl_surface      *cursor_surface;
     int                     allocated_cursor_scale;
+
+    /* dmabuf */
+    struct zwp_linux_dmabuf_v1 *dmabuf;
 };
 
 int vo_wayland_init(struct vo *vo);

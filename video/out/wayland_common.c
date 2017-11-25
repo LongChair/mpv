@@ -35,6 +35,10 @@
 // Generated from server-decoration.xml
 #include "video/out/wayland/srv-decor.h"
 
+// Generated from linux-dmabuf-unstable-v1.xml
+#include "video/out/wayland/linux-dmabuf-v1.h"
+
+
 static void xdg_shell_ping(void *data, struct zxdg_shell_v6 *shell, uint32_t serial)
 {
     zxdg_shell_v6_pong(shell, serial);
@@ -773,6 +777,20 @@ static const struct wl_callback_listener frame_listener = {
     frame_callback,
 };
 
+static void dmabuf_format(void *data, struct zwp_linux_dmabuf_v1 *zwp_linux_dmabuf,
+              uint32_t format)
+{
+        struct vo_wayland_state *wl = data;
+
+        MP_VERBOSE(wl, "dmabuf_format callback with format =%x\n", format);
+//	if (format == d->drm_format)
+//		d->requested_format_found = true;
+}
+
+static const struct zwp_linux_dmabuf_v1_listener dmabuf_listener = {
+        dmabuf_format
+};
+
 static void registry_handle_add(void *data, struct wl_registry *reg, uint32_t id,
                                 const char *interface, uint32_t ver)
 {
@@ -825,6 +843,11 @@ static void registry_handle_add(void *data, struct wl_registry *reg, uint32_t id
 
     if (!strcmp(interface, zwp_idle_inhibit_manager_v1_interface.name) && found++) {
         wl->idle_inhibit_manager = wl_registry_bind(reg, id, &zwp_idle_inhibit_manager_v1_interface, 1);
+    }
+
+    if (!strcmp(interface, "zwp_linux_dmabuf_v1") && found++) {
+        wl->dmabuf = wl_registry_bind(reg, id, &zwp_linux_dmabuf_v1_interface, 1);
+        zwp_linux_dmabuf_v1_add_listener(wl->dmabuf, &dmabuf_listener, wl);
     }
 
     if (found > 1)

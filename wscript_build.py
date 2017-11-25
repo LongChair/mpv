@@ -135,6 +135,12 @@ def build(ctx):
         ctx.wayland_protocol_header(proto_dir = "../video/out/wayland",
             protocol = "server-decoration",
             target   = "video/out/wayland/srv-decor.h")
+        ctx.wayland_protocol_header(proto_dir = ctx.env.WL_PROTO_DIR,
+            protocol = "unstable/linux-dmabuf/linux-dmabuf-unstable-v1",
+            target   = "video/out/wayland/linux-dmabuf-v1.h")
+        ctx.wayland_protocol_code(proto_dir = ctx.env.WL_PROTO_DIR,
+            protocol = "unstable/linux-dmabuf/linux-dmabuf-unstable-v1",
+            target   = "video/out/wayland/linux-dmabuf-v1.c")
 
     ctx(features = "ebml_header", target = "ebml_types.h")
     ctx(features = "ebml_definitions", target = "ebml_defs.c")
@@ -445,6 +451,7 @@ def build(ctx):
         ( "video/out/opengl/hwdec_osx.c",        "videotoolbox-gl" ),
         ( "video/out/opengl/hwdec_ios.m",        "ios-gl" ),
         ( "video/out/opengl/hwdec_drmprime_drm.c","drmprime && drm" ),
+        ( "video/out/opengl/hwdec_drmprime_wayland.c","drmprime && wayland" ),
         ( "video/out/opengl/hwdec_rpi.c",        "rpi" ),
         ( "video/out/opengl/hwdec_vaegl.c",      "vaapi-egl" ),
         ( "video/out/opengl/hwdec_vaglx.c",      "vaapi-glx" ),
@@ -483,6 +490,7 @@ def build(ctx):
         ( "video/out/wayland/xdg-shell-v6.c",    "wayland" ),
         ( "video/out/wayland/idle-inhibit-v1.c", "wayland" ),
         ( "video/out/wayland/srv-decor.c",       "wayland" ),
+        ( "video/out/wayland/linux-dmabuf-v1.c", "wayland" ),
         ( "video/out/win_state.c"),
         ( "video/out/x11_common.c",              "x11" ),
         ( "video/out/drm_atomic.c",              "drm" ),
