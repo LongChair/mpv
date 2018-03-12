@@ -252,11 +252,57 @@ static bool crtc_setup(struct ra_ctx *ctx)
     if (p->active)
         return true;
     p->old_crtc = drmModeGetCrtc(p->kms->fd, p->kms->crtc_id);
-    int ret = drmModeSetCrtc(p->kms->fd, p->kms->crtc_id, p->fb->id,
-                             0, 0, &p->kms->connector->connector_id, 1,
-                             &p->kms->mode);
-    p->active = true;
-    return ret == 0;
+
+    if (p->kms->atomic_context) {
+        struct drm_atomic_context *atomic_ctx = p->kms->atomic_context;
+        drmModeAtomicReqPtr request = drmModeAtomicAlloc();
+        if (request) {
+
+            drm_object_set_property(request, atomic_ctx->connector, "CRTC_ID", p->kms->crtc_id);
+
+            uint32_t blob_id;
+            if (drmModeCreatePropertyBlob(p->kms->fd, &p->kms->mode, sizeof(drmModeModeInfo),
+                                          &blob_id) != 0) {
+                MP_ERR(ctx->vo, "Failed to DRM mode blob\n");
+                return 0;
+            }
+            drm_object_set_property(request, atomic_ctx->connector, "MODE_ID", blob_id);
+            drm_object_set_property(request, atomic_ctx->crtc, "ACTIVE", 1);
+
+            drm_object_set_property(request, atomic_ctx->osd_plane, "SRC_X",   0);
+            drm_object_set_property(request, atomic_ctx->osd_plane, "SRC_Y",   0);
+            drm_object_set_property(request, atomic_ctx->osd_plane, "SRC_W",   p->kms->mode.hdisplay << 16);
+            drm_object_set_property(request, atomic_ctx->osd_plane, "SRC_H",   p->kms->mode.vdisplay << 16);
+            drm_object_set_property(request, atomic_ctx->osd_plane, "CRTC_X",  0);
+            drm_object_set_property(request, atomic_ctx->osd_plane, "CRTC_Y",  0);
+            drm_object_set_property(request, atomic_ctx->osd_plane, "CRTC_W",  p->kms->mode.hdisplay);
+            drm_object_set_property(request, atomic_ctx->osd_plane, "CRTC_H",  p->kms->mode.vdisplay);
+
+            int ret = drmModeAtomicCommit(p->kms->fd, request,
+                                      DRM_MODE_ATOMIC_NONBLOCK | DRM_MODE_PAGE_FLIP_EVENT
+                                      | DRM_MODE_ATOMIC_ALLOW_MODESET, NULL);
+
+            if (ret)
+               MP_WARN(ctx->vo, "Failed to commit ModeSetting atomic request (%d)\n", ret);
+
+            drmModeAtomicFree(request);
+
+            p->active = true;
+            return ret == 0;
+        } else {
+            MP_ERR(ctx->vo, "Failed to allocate drm atomic request\n");
+        }
+
+        p->active = true;
+        return false;
+
+    } else {
+        int ret = drmModeSetCrtc(p->kms->fd, p->kms->crtc_id, p->fb->id,
+                                 0, 0, &p->kms->connector->connector_id, 1,
+                                 &p->kms->mode);
+        p->active = true;
+        return ret == 0;
+    }
 }
 
 static void crtc_release(struct ra_ctx *ctx)
