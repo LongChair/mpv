@@ -156,23 +156,23 @@ static int overlay_frame(struct ra_hwdec *hw, struct mp_image *hw_image,
             }
 
             if (request) {
-                drm_object_set_property(request, p->ctx->overlay_plane, "FB_ID", next_frame.fb.fb_id);
-                drm_object_set_property(request,  p->ctx->overlay_plane, "CRTC_ID", p->ctx->crtc->id);
-                drm_object_set_property(request,  p->ctx->overlay_plane, "SRC_X",   p->src.x0 << 16);
-                drm_object_set_property(request,  p->ctx->overlay_plane, "SRC_Y",   p->src.y0 << 16);
-                drm_object_set_property(request,  p->ctx->overlay_plane, "SRC_W",   srcw << 16);
-                drm_object_set_property(request,  p->ctx->overlay_plane, "SRC_H",   srch << 16);
-                drm_object_set_property(request,  p->ctx->overlay_plane, "CRTC_X",  MP_ALIGN_DOWN(p->dst.x0, 2));
-                drm_object_set_property(request,  p->ctx->overlay_plane, "CRTC_Y",  MP_ALIGN_DOWN(p->dst.y0, 2));
-                drm_object_set_property(request,  p->ctx->overlay_plane, "CRTC_W",  dstw);
-                drm_object_set_property(request,  p->ctx->overlay_plane, "CRTC_H",  dsth);
-                drm_object_set_property(request,  p->ctx->overlay_plane, "ZPOS",    0);
+                drm_object_set_property(request, p->ctx->video_plane, "FB_ID", next_frame.fb.fb_id);
+                drm_object_set_property(request,  p->ctx->video_plane, "CRTC_ID", p->ctx->crtc->id);
+                drm_object_set_property(request,  p->ctx->video_plane, "SRC_X",   p->src.x0 << 16);
+                drm_object_set_property(request,  p->ctx->video_plane, "SRC_Y",   p->src.y0 << 16);
+                drm_object_set_property(request,  p->ctx->video_plane, "SRC_W",   srcw << 16);
+                drm_object_set_property(request,  p->ctx->video_plane, "SRC_H",   srch << 16);
+                drm_object_set_property(request,  p->ctx->video_plane, "CRTC_X",  MP_ALIGN_DOWN(p->dst.x0, 2));
+                drm_object_set_property(request,  p->ctx->video_plane, "CRTC_Y",  MP_ALIGN_DOWN(p->dst.y0, 2));
+                drm_object_set_property(request,  p->ctx->video_plane, "CRTC_W",  dstw);
+                drm_object_set_property(request,  p->ctx->video_plane, "CRTC_H",  dsth);
+                drm_object_set_property(request,  p->ctx->video_plane, "ZPOS",    0);
             } else {
-                ret = drmModeSetPlane(p->ctx->fd, p->ctx->overlay_plane->id, p->ctx->crtc->id, next_frame.fb.fb_id, 0,
+                ret = drmModeSetPlane(p->ctx->fd, p->ctx->video_plane->id, p->ctx->crtc->id, next_frame.fb.fb_id, 0,
                                       MP_ALIGN_DOWN(p->dst.x0, 2), MP_ALIGN_DOWN(p->dst.y0, 2), dstw, dsth,
                                       p->src.x0 << 16, p->src.y0 << 16 , srcw << 16, srch << 16);
                 if (ret < 0) {
-                    MP_ERR(hw, "Failed to set the plane %d (buffer %d).\n", p->ctx->overlay_plane->id,
+                    MP_ERR(hw, "Failed to set the plane %d (buffer %d).\n", p->ctx->video_plane->id,
                                 next_frame.fb.fb_id);
                     goto fail;
                 }
@@ -206,7 +206,7 @@ static void uninit(struct ra_hwdec *hw)
 static int init(struct ra_hwdec *hw)
 {
     struct priv *p = hw->priv;
-    int drm_overlay;
+    int osd_plane_id, video_plane_id;
 
     if (!ra_is_gl(hw->ra))
         return -1;
@@ -215,7 +215,8 @@ static int init(struct ra_hwdec *hw)
 
     void *tmp = talloc_new(NULL);
     struct drm_opts *opts = mp_get_config_group(tmp, hw->global, &drm_conf);
-    drm_overlay = opts->drm_overlay_id;
+    osd_plane_id = opts->drm_osd_plane_id;
+    video_plane_id = opts->drm_video_plane_id;
     talloc_free(tmp);
 
     GL *gl = ra_gl_get(hw->ra);
@@ -229,7 +230,7 @@ static int init(struct ra_hwdec *hw)
 
     if (params->fd) {
         p->ctx = drm_atomic_create_context(p->log, params->fd, params->crtc_id,
-                                           params->connector_id, drm_overlay);
+                                           params->connector_id, osd_plane_id, video_plane_id);
         if (!p->ctx) {
             mp_err(p->log, "Failed to retrieve DRM atomic context.\n");
             goto err;
@@ -246,7 +247,6 @@ static int init(struct ra_hwdec *hw)
         p->display_h = crtc->mode.vdisplay;
         drmModeFreeCrtc(crtc);
     }
-
 
     uint64_t has_prime;
     if (drmGetCap(p->ctx->fd, DRM_CAP_PRIME, &has_prime) < 0) {
