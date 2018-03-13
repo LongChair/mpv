@@ -110,6 +110,23 @@ static void scale_dst_rect(struct ra_hwdec *hw, int source_w, int source_h ,stru
     dst->y1 += offset_y;
 }
 
+static void disable_video_plane(struct ra_hwdec *hw)
+{
+    struct priv *p = hw->priv;
+    GL *gl = ra_gl_get(hw->ra);
+    drmModeAtomicReq *request = NULL;
+    struct mpv_opengl_cb_drm_params *drmparams =
+            gl ? (struct mpv_opengl_cb_drm_params *)
+            mpgl_get_native_display(gl, "opengl-cb-drm-params") : NULL;
+    if (drmparams)
+        request = (drmModeAtomicReq *)drmparams->atomic_request;
+
+    if (request) {
+        drm_object_set_property(request, p->ctx->video_plane, "FB_ID", 0);
+        drm_object_set_property(request,  p->ctx->video_plane, "CRTC_ID", 0);
+    }
+}
+
 static int overlay_frame(struct ra_hwdec *hw, struct mp_image *hw_image,
                          struct mp_rect *src, struct mp_rect *dst, bool newframe)
 {
@@ -181,6 +198,8 @@ static int overlay_frame(struct ra_hwdec *hw, struct mp_image *hw_image,
     } else {
         while (p->old_frame.fb.fb_id)
           set_current_frame(hw, NULL);
+
+        disable_video_plane(hw);
     }
 
     set_current_frame(hw, &next_frame);
@@ -196,6 +215,7 @@ static void uninit(struct ra_hwdec *hw)
     struct priv *p = hw->priv;
 
     set_current_frame(hw, NULL);
+    disable_video_plane(hw);
 
     if (p->ctx) {
         drm_atomic_destroy_context(p->ctx);
@@ -254,6 +274,7 @@ static int init(struct ra_hwdec *hw)
         goto err;
     }
 
+    disable_video_plane(hw);
     return 0;
 
 err:
