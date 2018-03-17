@@ -229,7 +229,7 @@ static int init(struct ra_hwdec *hw)
 
     if (params->fd) {
         p->ctx = drm_atomic_create_context(p->log, params->fd, params->crtc_id,
-                                           drm_overlay);
+                                           params->connector_id, drm_overlay);
         if (!p->ctx) {
             mp_err(p->log, "Failed to retrieve DRM atomic context.\n");
             goto err;
