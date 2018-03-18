@@ -196,8 +196,6 @@ static int overlay_frame(struct ra_hwdec *hw, struct mp_image *hw_image,
             }
         }
     } else {
-        while (p->old_frame.fb.fb_id)
-          set_current_frame(hw, NULL);
 
         disable_video_plane(hw);
     }
@@ -214,7 +212,9 @@ static void uninit(struct ra_hwdec *hw)
 {
     struct priv *p = hw->priv;
 
-    set_current_frame(hw, NULL);
+    while (p->old_frame.fb.fb_id)
+      set_current_frame(hw, NULL);
+
     disable_video_plane(hw);
 
     if (p->ctx) {
