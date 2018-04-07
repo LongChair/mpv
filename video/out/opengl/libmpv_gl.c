@@ -73,6 +73,12 @@ static int init(struct libmpv_gpu_context *ctx, mpv_render_param *params)
         void *wl = p->gl->MPGetNativeDisplay("wl");
         if (wl)
             ra_add_native_resource(ctx->ra, "wl", wl);
+        void *drm_params = p->gl->MPGetNativeDisplay("drm_params");
+        if (drm_params)
+            ra_add_native_resource(ctx->ra, "drm_params", drm_params);
+        void *drm_osd_size = p->gl->MPGetNativeDisplay("drm_osd_size");
+        if (drm_osd_size)
+            ra_add_native_resource(ctx->ra, "drm_osd_size", drm_osd_size);
     }
 
     return 0;

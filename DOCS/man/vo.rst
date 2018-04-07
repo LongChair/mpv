@@ -506,6 +506,13 @@ Available video output drivers are:
         This currently only has an effect when used together with the ``drm``
         backend for the ``gpu`` VO. The ``drm`` VO always uses xrgb8888.
 
+    ``--drm-osd-size=<[WxH]>``
+        Sets the OSD OpenGL size to the specified size. OSD will then be upscaled
+        to the current screen resolution. This option can be useful when using
+        several layers in high resolutions with a GPU which cannot handle it.
+        Note : this option is only available with DRM atomic support.
+        (default: display resolution)
+
 ``mediacodec_embed`` (Android)
     Renders ``IMGFMT_MEDIACODEC`` frames directly to an ``android.view.Surface``.
     Requires ``--hwdec=mediacodec`` for hardware decoding, along with
