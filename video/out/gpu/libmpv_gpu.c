@@ -20,6 +20,8 @@ struct priv {
 static const char *const native_resource_map[] = {
     [MPV_RENDER_PARAM_X11_DISPLAY] = "x11",
     [MPV_RENDER_PARAM_WL_DISPLAY] = "wl",
+    [MPV_RENDER_PARAM_DRM_DISPLAY] = "drm_params",
+    [MPV_RENDER_PARAM_DRM_OSD_SIZE] = "drm_osd_size",
 };
 
 static int init(struct render_backend *ctx, mpv_render_param *params)
