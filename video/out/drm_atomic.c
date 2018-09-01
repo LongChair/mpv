@@ -137,6 +137,75 @@ void drm_object_print_info(struct mp_log *log, struct drm_object *object)
                (long long)object->props->prop_values[i]);
 }
 
+static int drm_atomic_get_plane_id_by_type(const drmModePlaneRes *plane_res, int crtc_index)
+{
+    drmModePlane *drmplane = NULL;
+
+    for (unsigned int j = 0; j < plane_res->count_planes; j++) {
+        drmplane = drmModeGetPlane(ctx->fd, plane_res->planes[j]);
+        if (drmplane->possible_crtcs & (1 << crtc_index)) {
+            plane = drm_object_create(log, ctx->fd, drmplane->plane_id,
+                                      DRM_MODE_OBJECT_PLANE);
+
+            if (plane) {
+                if (drm_object_get_property(plane, "TYPE", &value) == -EINVAL) {
+                    mp_err(log, "Unable to retrieve type property from plane %d\n", j);
+                    goto fail;
+                } else {
+                    if (value == plane_type)
+                        return drmplane->plane_id;
+
+                    drm_object_free(plane);
+                    plane = NULL;
+                }
+            } else {
+                mp_err(log, "Failed to create Plane object from plane ID %d\n",
+                       drmplane->plane_id);
+                goto fail;
+            }
+        }
+        drmModeFreePlane(drmplane);
+        drmplane = NULL;
+    }
+}
+
+static int drm_atomic_get_plane_id_by_idx(const drmModePlaneRes *plane_res, int crtc_index)
+{
+    int layercount = -1;
+
+    for (unsigned int j = 0; j < plane_res->count_planes; j++) {
+        drmplane = drmModeGetPlane(ctx->fd, plane_res->planes[j]);
+        if (drmplane->possible_crtcs & (1 << crtc_index)) {
+            plane = drm_object_create(log, ctx->fd, drmplane->plane_id,
+                                      DRM_MODE_OBJECT_PLANE);
+
+            if (plane) {
+                if (drm_object_get_property(plane, "TYPE", &value) == -EINVAL) {
+                    mp_err(log, "Unable to retrieve type property from plane %d\n", j);
+                    goto fail;
+                } else {
+                    if (value == DRM_PLANE_TYPE_CURSOR) // Skip cursor planes
+                        continue;
+
+                    layercount++;
+
+                    if (layercount == plane_idx)
+                        return drmplane->plane_id;
+
+                    drm_object_free(plane);
+                    plane = NULL;
+                }
+            } else {
+                mp_err(log, "Failed to create Plane object from plane ID %d\n",
+                       drmplane->plane_id);
+                goto fail;
+            }
+        }
+        drmModeFreePlane(drmplane);
+        drmplane = NULL;
+    }
+}
+
 struct drm_atomic_context *drm_atomic_create_context(struct mp_log *log, int fd, int crtc_id,
                                                      int connector_id, int osd_plane_id, int video_plane_id)
 {
@@ -198,8 +267,7 @@ struct drm_atomic_context *drm_atomic_create_context(struct mp_log *log, int fd,
     }
 
     for (unsigned int j = 0; j < plane_res->count_planes; j++) {
-
-        drmplane = drmModeGetPlane (ctx->fd, plane_res->planes[j]);
+        drmplane = drmModeGetPlane(ctx->fd, plane_res->planes[j]);
         if (drmplane->possible_crtcs & (1 << crtc_index)) {
             plane = drm_object_create(log, ctx->fd, drmplane->plane_id,
                                       DRM_MODE_OBJECT_PLANE);
@@ -282,8 +350,6 @@ fail:
         drmModeFreeResources(res);
     if (plane_res)
         drmModeFreePlaneResources(plane_res);
-    if (drmplane)
-        drmModeFreePlane(drmplane);
     if (plane)
         drm_object_free(plane);
     return NULL;
